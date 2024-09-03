@@ -1,0 +1,57 @@
+import streamlit as st
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+# Load the dataset
+@st.cache
+def load_data():
+    return pd.read_csv('path/to/your/Sonar data.csv', header=None)
+
+data = load_data()
+
+# Display the dataset
+st.write("Sonar Data:")
+st.write(data.head())
+
+# Split the dataset into features and labels
+X = data.drop(columns=60, axis=1)
+Y = data[60]
+
+# Standardize the data
+scaler = StandardScaler()
+scaler.fit(X)
+standardized_data = scaler.transform(X)
+X = standardized_data
+
+# Split the data into training and testing sets
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.1, stratify=Y, random_state=1)
+
+# Train the model
+classifier = LogisticRegression()
+classifier.fit(X_train, Y_train)
+
+# App title
+st.title('Mine Explorer Prediction App')
+
+# Input fields
+# Adjust these fields to match your sonar sensor features
+features = [st.number_input(f'Feature {i}', min_value=float(data[i].min()), max_value=float(data[i].max()), value=float(data[i].median())) for i in range(X.shape[1])]
+
+# Prediction button
+if st.button('Predict'):
+    input_data_as_numpy_array = np.asarray(features).reshape(1, -1)
+    std_data = scaler.transform(input_data_as_numpy_array)
+    prediction = classifier.predict(std_data)
+    
+    if prediction[0] == 'R':
+        st.write("The object is a Rock.")
+    else:
+        st.write("The object is a Mine.")
+
+# Model accuracy
+accuracy = classifier.score(X_test, Y_test)
+st.subheader('Model Accuracy:')
+st.write(f'Accuracy on test data: {accuracy * 100:.2f}%')
